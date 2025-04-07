@@ -1,9 +1,9 @@
-## Prosperous Monkey Inc.
+# Prosperous Monkey Inc.
 
 ONG LIVE THE PROSPEROUS MONKEYS 
 WE WILL BECOME ROBBERBARENS AND STEAL FROM THE IMPOVRISHED TO GAIN EXTREME AMOUNTS OF WEALTH
 
-# Setup
+## Setup
 
 Run: `pip install -r requirements.txt`
 
