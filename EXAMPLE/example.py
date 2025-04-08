@@ -67,6 +67,8 @@ class Trader:
             elif product == "KELP":
                 acceptable_price = (best_ask + best_bid) / 2 if (best_ask and best_bid) else self.acceptable_prices[product]
 
+                volume = 0  # Initialize volume
+
                 # Sexy, aggressive, and mean like Ryan
                 if best_ask and best_ask < acceptable_price * 0.95:
                     volume = min(-order_depth.sell_orders[best_ask], self.position_limits[product] - current_position)
@@ -74,11 +76,14 @@ class Trader:
                 if best_bid and best_bid > acceptable_price * 1.05:
                     volume = min(order_depth.buy_orders[best_bid], self.position_limits[product] - current_position)
 
-                orders.append(Order(product, best_bid, volume))
+                if volume != 0:
+                    orders.append(Order(product, best_bid, volume))
 
             elif product == "SQUID_INK":
                 # Pattern detetcion
                 acceptable_price = self.acceptable_prices[product]
+
+                volume = 0
 
                 if best_ask and best_ask < acceptable_price * 0.97:
                     volume = min(-order_depth.sell_orders[best_ask], self.position_limits[product] - current_position)
@@ -88,6 +93,7 @@ class Trader:
                 if best_bid and best_bid > acceptable_price * 1.03:
                     volume = min(order_depth.buy_orders[best_bid], self.position_limits[product] - current_position)
 
+                if volume != 0:
                     orders.append(Order(product, best_bid, volume))
 
             result[product] = orders
