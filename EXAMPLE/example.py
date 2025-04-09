@@ -17,8 +17,8 @@ class Trader:
         self.acceptable_prices = {
 
             "RAINFOREST_RESIN": 10_000,  # Arbitrary average I chose for resin prices
-            "KELP": 5_000,               # Arbitrary average I chose for kelp prices
-            "SQUID_INK": 7_500           # Arbitrary average I chose for squid ink prices
+            "KELP": 2_000,               # Arbitrary average I chose for kelp prices
+            "SQUID_INK": 1_800           # Arbitrary average I chose for squid ink prices
 
         }
 
@@ -53,13 +53,13 @@ class Trader:
             if product == "RAINFOREST_RESIN":
                 acceptable_price = self.acceptable_prices[product]
 
-                # Conservative strategy for stable assets
-                if best_ask and best_ask < acceptable_price * 0.98:
+                # Super Conservative strategy for stable assets
+                if best_ask and best_ask < acceptable_price * 0.97:
                     volume = min(-order_depth.sell_orders[best_ask], self.position_limits[product] - current_position)
 
                     orders.append(Order(product, best_ask, volume))
 
-                if best_bid and best_bid > acceptable_price * 1.02:
+                if best_bid and best_bid > acceptable_price * 1.03:
                     volume = min(order_depth.buy_orders[best_bid], self.position_limits[product] - current_position)
 
                     orders.append(Order(product, best_bid, volume))
@@ -97,7 +97,6 @@ class Trader:
                     orders.append(Order(product, best_bid, volume))
 
             result[product] = orders
-
         return result, 1, "SAMPLE"
 
         """
