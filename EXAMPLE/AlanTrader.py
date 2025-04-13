@@ -123,102 +123,121 @@ logger = Logger()
 
 class Trader:
     def __init__(self):
-        # Position limits that will prevent over-trading
         self.position_limits = {
-
-            "RAINFOREST_RESIN": 50, # Hard cap for stable commodity
-            "KELP": 50,             # Hard cap for volatile commodity
-            "SQUID_INK": 50         # Hard cap for patterned commodity
-
+            "RAINFOREST_RESIN": 50,
+            "KELP": 50,
+            "SQUID_INK": 50,
+            "CROISSANTS": 250
         }
 
-        # Baseline price for each product
         self.acceptable_prices = {
-
-            "RAINFOREST_RESIN": 10_000,  # Arbitrary average I chose for resin prices
-            "KELP": 2_000,               # Arbitrary average I chose for kelp prices
-            "SQUID_INK": 1_800           # Arbitrary average I chose for squid ink prices
-
+            "RAINFOREST_RESIN": 10_000,
+            "KELP": 2_000,
+            "SQUID_INK": 1_870,
+            "CROISSANTS": 4_270
         }
 
-    def run(self, state: TradingState) -> tuple[dict[Symbol, list[Order]], int, str]:
-        """
-        Only method required. It takes all buy and sell orders for all symbols as an input,
-        and outputs a list of orders to be sent
-        """
-        # Initialize the method output dict as an empty dict
+        # Simple internal commodity tracking system
+        self.commodity_history = {
+            "RAINFOREST_RESIN": [],
+            "KELP": [],
+            "SQUID_INK": [],
+            "CROISSANTS": []
+        }
+
+    def track_commodity(self, product: str, action: str, price: float, volume: int):
+        event = {
+            "timestamp": self.get_current_timestamp(),
+            "action": action,
+            "price": price,
+            "volume": volume
+        }
+        self.commodity_history[product].append(event)
+
+    def get_current_timestamp(self):
+        # Replace with actual timestamp generator if needed
+        import datetime
+        return datetime.datetime.utcnow().isoformat()
+
+    def run(self, state: TradingState) -> tuple[dict[str, list[Order]], int, str]:
         result = {}
         conversions = 0
         trader_data = ""
-        # Iterate over all the keys (the available products) contained in the order depth
+
         for product in state.order_depths.keys():
-
-            # Retrieve the Order Depth containing all the market BUY and SELL orders
             order_depth: OrderDepth = state.order_depths[product]
-
-            # Initialize the list of Orders to be sent as an empty list
             orders: list[Order] = []
-
-            # Tracking current holdings
             current_position = state.position.get(product, 0)
 
-            # Market analysis (finding the best prices)
             best_ask = min(order_depth.sell_orders.keys()) if order_depth.sell_orders else None
             best_bid = max(order_depth.buy_orders.keys()) if order_depth.buy_orders else None
 
-            # Spread for calcs based on volatility (emphasis on Kelp cuz we risky (◕‿↼) )
-            spread = best_ask - best_bid if (best_ask and best_bid) else 0
-
-            # Breaking down trading logic by product
             if product == "RAINFOREST_RESIN":
                 acceptable_price = self.acceptable_prices[product]
 
-                # Super Conservative strategy for stable assets
-                if best_ask and best_ask < acceptable_price * 0.97:
-                    volume = min(-order_depth.sell_orders[best_ask], self.position_limits[product] - current_position)
-
+                if best_ask and best_ask < acceptable_price * 0.9999:
+                    volume = min(-order_depth.sell_orders[best_ask],
+                                 self.position_limits[product] - current_position)
                     orders.append(Order(product, best_ask, volume))
+                    self.track_commodity(product, "BUY", best_ask, volume)
 
-                if best_bid and best_bid > acceptable_price * 1.03:
-                    volume = min(order_depth.buy_orders[best_bid], self.position_limits[product] - current_position)
+                if best_bid and best_bid > acceptable_price * 1.0001:
+                    volume = min(order_depth.buy_orders[best_bid],
+                                 self.position_limits[product] - current_position)
+                    orders.append(Order(product, best_bid, -volume))
+                    self.track_commodity(product, "SELL", best_bid, volume)
 
-                    orders.append(Order(product, best_bid, volume))
 
             elif product == "KELP":
-                acceptable_price = (best_ask + best_bid) / 2 if (best_ask and best_bid) else self.acceptable_prices[product]
+                acceptable_price = (best_ask + best_bid)/2 if (best_ask and best_bid) else self.acceptable_prices[product]
 
-                volume = 0  # Initialize volume
-
-                # Sexy, aggressive, and mean like Ryan
                 if best_ask and best_ask < acceptable_price * 0.95:
-                    volume = min(-order_depth.sell_orders[best_ask], self.position_limits[product] - current_position)
+                    volume = min(-order_depth.sell_orders[best_ask],
+                                 self.position_limits[product] - current_position)
                     if volume > 0:
                         orders.append(Order(product, best_ask, volume))
+                        self.track_commodity(product, "BUY", best_ask, volume)
 
                 if best_bid and best_bid > acceptable_price * 1.05:
-                    volume = min(order_depth.buy_orders[best_bid], self.position_limits[product] - current_position)
+                    volume = min(order_depth.buy_orders[best_bid],
+                                 self.position_limits[product] - current_position)
                     if volume > 0:
-                        orders.append(Order(product, best_bid, volume))
-
+                        orders.append(Order(product, best_bid, -volume))
+                        self.track_commodity(product, "SELL", best_bid, volume)
 
             elif product == "SQUID_INK":
-                # Pattern detetcion
                 acceptable_price = self.acceptable_prices[product]
 
-                volume = 0
-
-                if best_ask and best_ask < acceptable_price * 0.97:
-                    volume = min(-order_depth.sell_orders[best_ask], self.position_limits[product] - current_position)
-
+                if best_ask and best_ask < acceptable_price * 0.99:
+                    volume = min(-order_depth.sell_orders[best_ask],
+                                 self.position_limits[product] - current_position)
                     orders.append(Order(product, best_ask, volume))
+                    self.track_commodity(product, "BUY", best_ask, volume)
 
-                if best_bid and best_bid > acceptable_price * 1.03:
-                    volume = min(order_depth.buy_orders[best_bid], self.position_limits[product] - current_position)
+                if best_bid and best_bid > acceptable_price * 1.01:
+                    volume = min(order_depth.buy_orders[best_bid],
+                                 self.position_limits[product] - current_position)
+                    orders.append(Order(product, best_bid, -volume))
+                    self.track_commodity(product, "SELL", best_bid, volume)
 
-                if volume != 0:
-                    orders.append(Order(product, best_bid, volume))
+            elif product == "CROISSANTS":
+                acceptable_price = self.acceptable_prices[product]
 
-            result[product] = orders
-            
+                if best_ask and best_ask < acceptable_price * 0.9999:
+                    volume = min(-order_depth.sell_orders[best_ask],
+                                 self.position_limits[product] - current_position)
+                    orders.append(Order(product, best_ask, volume))
+                    self.track_commodity(product, "BUY", best_ask, volume)
+
+                if best_bid and best_bid > acceptable_price * 1.0001:
+                    volume = min(order_depth.buy_orders[best_bid],
+                                 self.position_limits[product] - current_position)
+                    orders.append(Order(product, best_bid, -volume))
+                    self.track_commodity(product, "SELL", best_bid, volume)
+
+            if orders:
+                result[product] = orders
+
         logger.flush(state, result, conversions, trader_data)
         return result, conversions, trader_data
+#Hello World
