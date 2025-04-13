@@ -127,14 +127,16 @@ class Trader:
             "RAINFOREST_RESIN": 50,
             "KELP": 50,
             "SQUID_INK": 50,
-            "CROISSANTS": 250
+            "CROISSANTS": 250,
+            "DJEMBES": 60
         }
 
         self.acceptable_prices = {
             "RAINFOREST_RESIN": 10_000,
             "KELP": 2_000,
             "SQUID_INK": 1_870,
-            "CROISSANTS": 4_270
+            "CROISSANTS": 4_270,
+            "DJEMBES": 13_380
         }
 
         # Simple internal commodity tracking system
@@ -142,7 +144,8 @@ class Trader:
             "RAINFOREST_RESIN": [],
             "KELP": [],
             "SQUID_INK": [],
-            "CROISSANTS": []
+            "CROISSANTS": [],
+            "DJEMBES": []
         }
 
     def track_commodity(self, product: str, action: str, price: float, volume: int):
@@ -230,6 +233,21 @@ class Trader:
                     self.track_commodity(product, "BUY", best_ask, volume)
 
                 if best_bid and best_bid > acceptable_price * 1.0001:
+                    volume = min(order_depth.buy_orders[best_bid],
+                                 self.position_limits[product] - current_position)
+                    orders.append(Order(product, best_bid, -volume))
+                    self.track_commodity(product, "SELL", best_bid, volume)
+
+            elif product == "DJEMBES":
+                acceptable_price = self.acceptable_prices[product]
+
+                if best_ask and best_ask < acceptable_price * 0.99985 and best_ask > 13378 and best_ask < 13390:
+                    volume = min(-order_depth.sell_orders[best_ask],
+                                 self.position_limits[product] - current_position)
+                    orders.append(Order(product, best_ask, volume))
+                    self.track_commodity(product, "BUY", best_ask, volume)
+
+                if best_bid and best_bid > acceptable_price * 1.00015 and best_bid < 13390 and best_bid > 13375:
                     volume = min(order_depth.buy_orders[best_bid],
                                  self.position_limits[product] - current_position)
                     orders.append(Order(product, best_bid, -volume))
