@@ -132,7 +132,7 @@ class Trader:
         self.acceptable_prices = {
             "RAINFOREST_RESIN": 10_000,
             "KELP": 2_000,
-            "SQUID_INK": 1_800
+            "SQUID_INK": 1_870
         }
 
         # Simple internal commodity tracking system
@@ -183,7 +183,7 @@ class Trader:
                                  self.position_limits[product] - current_position)
                     orders.append(Order(product, best_bid, -volume))
                     self.track_commodity(product, "SELL", best_bid, volume)
-                logger.print(f"[RESIN] Current position: {current_position}, Limit: {self.position_limits[product]}")
+
 
             elif product == "KELP":
                 acceptable_price = (best_ask + best_bid)/2 if (best_ask and best_bid) else self.acceptable_prices[product]
@@ -205,13 +205,13 @@ class Trader:
             elif product == "SQUID_INK":
                 acceptable_price = self.acceptable_prices[product]
 
-                if best_ask and best_ask < acceptable_price * 0.97:
+                if best_ask and best_ask < acceptable_price * 0.99:
                     volume = min(-order_depth.sell_orders[best_ask],
                                  self.position_limits[product] - current_position)
                     orders.append(Order(product, best_ask, volume))
                     self.track_commodity(product, "BUY", best_ask, volume)
 
-                if best_bid and best_bid > acceptable_price * 1.03:
+                if best_bid and best_bid > acceptable_price * 1.01:
                     volume = min(order_depth.buy_orders[best_bid],
                                  self.position_limits[product] - current_position)
                     orders.append(Order(product, best_bid, -volume))
